@@ -5,6 +5,12 @@ const consts = {
 	max_key_size: 512
 };
 
+const methods = {
+	set: '/set',
+	get: '/get',
+	delete: '/del'
+};
+
 interface Env {
 	STORAGE: KVNamespace
 	AUTHTOKEN: string
@@ -23,15 +29,14 @@ export default {
 			}, null, 503);
 		}
 
-		//	just to be a bit more comfy
+		//	construct a URL object
 		const url = new URL(request.url);
-		const pathname = url.pathname;
-		const recordID = url.searchParams.get('record_id');
-
+		
 		//	check that the user has a valid token
 		const bearer = request.headers.get('Authorization')?.replace('Bearer', '')?.replace(/\s/g, '') || url.searchParams.get('token');
 		if (bearer !== accessToken) {
-			await sleep(Math.round(Math.random() * 100));
+			//	fake time that is required to perform token validation
+			await sleep(Math.round(Math.random() * 250));
 			return RESTponse({
 				success: false,
 				reason: 'Unauthorized: provide a valid token to continue'
@@ -40,10 +45,47 @@ export default {
 			}, 401);
 		}
 
+		//	extract request data
+		let recordID: string | null = url.searchParams.get('record_id');
+		let recordSetData: string | null = url.searchParams.get('data');
+
+		if (['PUT','POST'].some(method => method === request.method)) {
+			const requestBody = await request.text();
+			const possibleJSON = request.headers.get('content-type')?.includes('json') ? maybeJSON(requestBody) : null;
+			recordSetData = recordSetData || possibleJSON?.['data'] || requestBody;
+			recordID = recordID || possibleJSON?.['record_id'];
+		}
+
+		//	these methods require a valid record_id
+		if ([
+			methods.delete,
+			methods.get,
+			methods.set
+		].some(method => method === url.pathname)) {
+
+			//	check that we have a record id
+			if (typeof recordID !== 'string') {
+				console.warn('No record id for GET function');
+				return RESTponse({
+					success: false,
+					reason: 'Record ID is not specified in search query params'
+				}, null, 400);
+			}
+
+			//	check that record_id is not too long
+			if (recordID.length > consts.max_key_size) {
+				console.error('Record ID is too long');
+				return RESTponse({
+					success: false,
+					reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
+				}, null, 400);
+			}
+		}
+
 		//	perform actions on KV
-		switch (pathname) {
+		switch (url.pathname) {
 			
-			case '/get': {
+			case methods.get: {
 
 				//	this action accepts only GET requests
 				if (request.method !== 'GET') {
@@ -51,24 +93,6 @@ export default {
 					return RESTponse(null, {
 						'Allow': 'GET'
 					}, 405);
-				}
-
-				//	check that we have a record id
-				if (!recordID) {
-					console.warn('No record id for GET function');
-					return RESTponse({
-						success: false,
-						reason: 'Record ID is not specified in search query params'
-					}, null, 400);
-				}
-
-				//	check that record id is not too long
-				if (recordID?.length > consts.max_key_size) {
-					console.error('Record ID is too long');
-					return RESTponse({
-						success: false,
-						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
-					}, null, 400);
 				}
 
 				//	return the record
@@ -80,51 +104,21 @@ export default {
 
 			} break;
 
-			case '/set': {
+			case methods.set: {
 
-				if (!['GET','POST'].some(method => method === request.method)) {
+				//	ensure correct http method
+				if (!['GET','POST','PUT'].some(method => method === request.method)) {
 					console.warn('Invalid method for SET function');
 					return RESTponse({
 						success: false,
 						reason: 'Come on, just POST here'
 					}, {
-						'Allow': 'GET, POST'
+						'Allow': 'GET, POST, PUT'
 					}, 405);
 				}
 
-				let setRecordID: string;
-				let setRecordData: string;
-
-				if (request.method === 'GET') {
-					setRecordID = recordID;
-					setRecordData = url.searchParams.get('data');
-				} else {
-					const requestBody = await request.text();
-					const possibleJSON = request.headers.get('content-type')?.includes('json') ? maybeJSON(requestBody) : null;
-					setRecordID = possibleJSON?.['record_id'] || recordID;
-					setRecordData = possibleJSON?.['data'] || requestBody;
-				}
-
-				//	check that we have a record id
-				if (typeof setRecordID !== 'string') {
-					console.warn('No record id for SET function');
-					return RESTponse({
-						success: false,
-						reason: 'Record ID is not specified in search query params nor in the payload\'s record_id field'
-					}, null, 400);
-				}
-
-				//	check that record id is not too long
-				if (setRecordID?.length > consts.max_key_size) {
-					console.error('Record ID is too long');
-					return RESTponse({
-						success: false,
-						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
-					}, null, 400);
-				}
-
 				//	check that we have some data to write
-				if (!setRecordData?.length) {
+				if (!recordSetData?.length) {
 					console.warn('No data set');
 					return RESTponse({
 						success: false,
@@ -133,7 +127,7 @@ export default {
 				}
 
 				//	and the data is not too big
-				if (setRecordData.length > consts.max_record_size) {
+				if (recordSetData.length > consts.max_record_size) {
 					console.warn('Data length too long');
 					return RESTponse({
 						success: false,
@@ -142,7 +136,7 @@ export default {
 				}
 
 				//	perform write and return
-				await env.STORAGE.put(recordID, setRecordData);
+				await env.STORAGE.put(recordID, recordSetData);
 
 				return RESTponse({
 					success: true,
@@ -151,24 +145,17 @@ export default {
 
 			} break;
 
-			case '/del': {
+			case methods.delete: {
 
-				//	check that we have a record id
-				if (!recordID) {
-					console.warn('No record id for GET function');
+				//	ensure correct http method
+				if (!['GET','DELETE'].some(method => method === request.method)) {
+					console.warn('Invalid method for DEL function');
 					return RESTponse({
 						success: false,
-						reason: 'Record ID is not specified in search query params'
-					}, null, 400);
-				}
-
-				//	check that record id is not too long
-				if (recordID?.length > consts.max_key_size) {
-					console.error('Record ID is too long');
-					return RESTponse({
-						success: false,
-						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
-					}, null, 400);
+						reason: 'Must be GET or DELETE'
+					}, {
+						'Allow': 'GET, DELETE'
+					}, 405);
 				}
 
 				//	delete record
@@ -177,7 +164,7 @@ export default {
 				return RESTponse({
 					success: true,
 					context: 'del'
-				});
+				}, null, 202);
 
 			} break;
 		

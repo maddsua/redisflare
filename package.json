@@ -1,6 +1,6 @@
 {
 	"name": "redisflare",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"dependencies": {
 		"wrangler": "^3.0.1",
 		"typescript": "^5.0.4",

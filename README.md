@@ -82,3 +82,24 @@ Response:
   "context": "set"
 }
 ```
+
+## Remove record
+
+Method: `GET`, `DELETE`
+
+Url: `{hostname}/del`
+
+Query params:
+ - `token`: string,
+ - `record_id`: string
+
+Example: `http://127.0.0.1:8787/get?token=token123&record_id=test`
+
+Response: 
+```json
+{
+  "success": true,
+  "context": "get",
+  "data": "test_data"
+}
+```
