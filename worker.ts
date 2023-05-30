@@ -150,6 +150,36 @@ export default {
 				}, null, 202);
 
 			} break;
+
+			case '/del': {
+
+				//	check that we have a record id
+				if (!recordID) {
+					console.warn('No record id for GET function');
+					return RESTponse({
+						success: false,
+						reason: 'Record ID is not specified in search query params'
+					}, null, 400);
+				}
+
+				//	check that record id is not too long
+				if (recordID?.length > consts.max_key_size) {
+					console.error('Record ID is too long');
+					return RESTponse({
+						success: false,
+						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
+					}, null, 400);
+				}
+
+				//	delete record
+				await env.STORAGE.delete(recordID);
+
+				return RESTponse({
+					success: true,
+					context: 'del'
+				});
+
+			} break;
 		
 			default: break;
 		}
