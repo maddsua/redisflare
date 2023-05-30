@@ -2,7 +2,7 @@
 
 Okay, so I got tired of my stack being 10014800 completely different apps and platforms, and this is an attempt to get myself a "cloud redis" on Cloudflare.
 
-More specificly, I want a REST API to just get and put some strings. That's it. Upstash is really nice, but it's layoff time.
+More specifically, I want a REST API to just get and put some strings. That's it. Upstash is really nice, but it's layoff time.
 
 ## Deploying
 
@@ -16,5 +16,69 @@ More specificly, I want a REST API to just get and put some strings. That's it. 
 
 5. ????
 
-6. Now you have your own Upstash 😎👍. No offence to their team, it's me just being a d.
+6. Now you have your own Upstash 😎👍. No offense to their team, it's me just being a d.
 
+## API
+
+### Get record
+
+Method: `GET`
+
+Url: `{hostname}/get`
+
+Query params:
+ - `token`: string,
+ - `record_id`: string
+
+Example: `http://127.0.0.1:8787/get?token=token123&record_id=test`
+
+Response: 
+```json
+{
+  "success": true,
+  "context": "get",
+  "data": "test_data"
+}
+```
+
+### Set record
+
+Methods: `POST`, `GET`
+
+Url: `{hostname}/set`
+
+GET example: `http://127.0.0.1:8787/set?token=token123&record_id=test&data=test_data`
+
+Query params:
+ - `token`: string (optional, for GET method)
+ - `record_id`: string (optional, for GET method)
+ - `data`: string (optional, for GET method)
+
+
+POST example: `http://127.0.0.1:8787/set`
+
+Headers:
+```javascript
+{
+	"Authorization": "Bearer token123"
+}
+```
+
+\* Note: The token is just a random string not up to any standards, and because of that, it is not required to prefix it with "Bearer". But you may want to do that for whatever reason
+
+Request body:
+```json
+{
+	"record_id": "test",
+	"data": "test_data"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "context": "set"
+}
+```

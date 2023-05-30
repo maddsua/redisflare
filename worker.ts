@@ -23,21 +23,13 @@ export default {
 			}, null, 503);
 		}
 
-		//	just to be i bit more comfy
+		//	just to be a bit more comfy
 		const url = new URL(request.url);
 		const pathname = url.pathname;
-		const recordID = url.searchParams.get('id');
-
-		if (recordID?.length > consts.max_key_size) {
-			console.error('Record ID is too long');
-			return RESTponse({
-				success: false,
-				reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
-			}, null, 400);
-		}
+		const recordID = url.searchParams.get('record_id');
 
 		//	check that the user has a valid token
-		const bearer = request.headers.get('Authorization') || url.searchParams.get('token');
+		const bearer = request.headers.get('Authorization')?.replace('Bearer', '')?.replace(/\s/g, '') || url.searchParams.get('token');
 		if (bearer !== accessToken) {
 			await sleep(Math.round(Math.random() * 100));
 			return RESTponse({
@@ -53,6 +45,7 @@ export default {
 			
 			case '/get': {
 
+				//	this action accepts only GET requests
 				if (request.method !== 'GET') {
 					console.warn('Invalid method for GET function');
 					return RESTponse(null, {
@@ -60,6 +53,7 @@ export default {
 					}, 405);
 				}
 
+				//	check that we have a record id
 				if (!recordID) {
 					console.warn('No record id for GET function');
 					return RESTponse({
@@ -68,6 +62,16 @@ export default {
 					}, null, 400);
 				}
 
+				//	check that record id is not too long
+				if (recordID?.length > consts.max_key_size) {
+					console.error('Record ID is too long');
+					return RESTponse({
+						success: false,
+						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
+					}, null, 400);
+				}
+
+				//	return the record
 				return RESTponse({
 					success: true,
 					context: 'get',
@@ -78,21 +82,49 @@ export default {
 
 			case '/set': {
 
-				if (request.method !== 'POST') {
-					console.warn('Invalid method for GET function');
+				if (!['GET','POST'].some(method => method === request.method)) {
+					console.warn('Invalid method for SET function');
 					return RESTponse({
 						success: false,
 						reason: 'Come on, just POST here'
 					}, {
-						'Allow': 'POST'
+						'Allow': 'GET, POST'
 					}, 405);
 				}
 
-				const isJSON = request.headers.get('content-type')?.includes('json');
-				const requestBody = await request.text();
-				const data = isJSON ? maybeJSON(requestBody)?.['data'] : requestBody;
+				let setRecordID: string;
+				let setRecordData: string;
 
-				if (!data?.length) {
+				if (request.method === 'GET') {
+					setRecordID = recordID;
+					setRecordData = url.searchParams.get('data');
+				} else {
+					const requestBody = await request.text();
+					const possibleJSON = request.headers.get('content-type')?.includes('json') ? maybeJSON(requestBody) : null;
+					setRecordID = possibleJSON?.['record_id'] || recordID;
+					setRecordData = possibleJSON?.['data'] || requestBody;
+				}
+
+				//	check that we have a record id
+				if (typeof setRecordID !== 'string') {
+					console.warn('No record id for SET function');
+					return RESTponse({
+						success: false,
+						reason: 'Record ID is not specified in search query params nor in the payload\'s record_id field'
+					}, null, 400);
+				}
+
+				//	check that record id is not too long
+				if (setRecordID?.length > consts.max_key_size) {
+					console.error('Record ID is too long');
+					return RESTponse({
+						success: false,
+						reason: `Record ID is too long. ${consts.max_key_size} bytes MAX`
+					}, null, 400);
+				}
+
+				//	check that we have some data to write
+				if (!setRecordData?.length) {
 					console.warn('No data set');
 					return RESTponse({
 						success: false,
@@ -100,7 +132,8 @@ export default {
 					}, null, 400);
 				}
 
-				if (data.length > consts.max_record_size) {
+				//	and the data is not too big
+				if (setRecordData.length > consts.max_record_size) {
 					console.warn('Data length too long');
 					return RESTponse({
 						success: false,
@@ -108,7 +141,8 @@ export default {
 					}, null, 400);
 				}
 
-				await env.STORAGE.put(recordID, data);
+				//	perform write and return
+				await env.STORAGE.put(recordID, setRecordData);
 
 				return RESTponse({
 					success: true,
@@ -120,6 +154,7 @@ export default {
 			default: break;
 		}
 
+		//	fallback response
 		return RESTponse({
 			success: false,
 			reason: 'Unknown command'

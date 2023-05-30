@@ -1,9 +1,9 @@
 import { getRandomValues } from "crypto";
 
+//	set token length
 const tokenLength = 32;
 
 let dict = '';
-
 //	populate the dictionary
 {
 	//	uppercase letters
@@ -23,14 +23,17 @@ let dict = '';
 	dict += '_';
 }
 
+//	get some random noise
 const noiseArray = new Uint8Array(tokenLength);
 getRandomValues(noiseArray);
 const dictLength = dict.length;
 let newToken = 'rdfl_';
 
+//	map noise to characters from the dictionary
 for (let i = 0; i < noiseArray.length; i++) {
 	const charIdx = Math.round(noiseArray[i] / 256 * dictLength);
 	newToken += dict[charIdx];
 }
 
+//	python style comment here
 console.log('Use this as your authntification token:', newToken);

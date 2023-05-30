@@ -13,4 +13,4 @@ compatibility_date = "2023-05-18"
 # Auth token for this redisflare instance
 [vars]
 	# replace this with your token
-	AUTHTOKEN = "test123"
+	AUTHTOKEN = "token123"
