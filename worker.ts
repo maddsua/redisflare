@@ -8,7 +8,8 @@ const consts = {
 const methods = {
 	set: '/set',
 	get: '/get',
-	delete: '/del'
+	delete: '/del',
+	list: '/list'
 };
 
 interface Env {
@@ -90,7 +91,10 @@ export default {
 				//	this action accepts only GET requests
 				if (request.method !== 'GET') {
 					console.warn('Invalid method for GET function');
-					return RESTponse(null, {
+					return RESTponse({
+						success: false,
+						reason: 'Request method must be GET'
+					}, {
 						'Allow': 'GET'
 					}, 405);
 				}
@@ -152,7 +156,7 @@ export default {
 					console.warn('Invalid method for DEL function');
 					return RESTponse({
 						success: false,
-						reason: 'Must be GET or DELETE'
+						reason: 'Request method must be GET or DELETE'
 					}, {
 						'Allow': 'GET, DELETE'
 					}, 405);
@@ -165,6 +169,38 @@ export default {
 					success: true,
 					context: 'del'
 				}, null, 202);
+
+			} break;
+
+			case methods.list: {
+
+				//	ensure correct http method
+				if (request.method !== 'GET') {
+					console.warn('Invalid method for LIST function');
+					return RESTponse({
+						success: false,
+						reason: 'Request method must be GET'
+					}, {
+						'Allow': 'GET'
+					}, 405);
+				}
+
+				const list = await env.STORAGE.list({
+					prefix: url.searchParams.get('prefix'),
+					cursor: url.searchParams.get('page')
+				});
+
+				return RESTponse({
+					success: true,
+					context: 'list',
+					data: list.keys.map(item => ({
+						record_id: item.name,
+						expiration: item.expiration,
+						metadata: item.metadata
+					})),
+					next_page: list['cursor'],
+					list_complete: list.list_complete
+				}, null, 200);
 
 			} break;
 		

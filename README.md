@@ -27,7 +27,7 @@ Method: `GET`
 Url: `{hostname}/get`
 
 Query params:
- - `token`: string,
+ - `token`: string
  - `record_id`: string
 
 Example: `http://127.0.0.1:8787/get?token=token123&record_id=test`
@@ -90,7 +90,7 @@ Method: `GET`, `DELETE`
 Url: `{hostname}/del`
 
 Query params:
- - `token`: string,
+ - `token`: string
  - `record_id`: string
 
 Example: `http://127.0.0.1:8787/del?token=token123&record_id=test`
@@ -100,5 +100,34 @@ Response:
 {
   "success": true,
   "context": "del"
+}
+```
+
+### List records
+
+Method: `GET`
+
+Url: `{hostname}/list`
+
+Query params:
+ - `prefix`: string (optional)
+ - `page`: string (optional)
+
+Example: `http://127.0.0.1:8787/del?token=token123&prefix=test`
+
+Response: 
+```json
+{
+  "success": true,
+  "context": "list",
+  "data": [
+    {
+      "record_id": "test"
+    },
+    {
+      "record_id": "test2"
+    }
+  ],
+  "list_complete": true
 }
 ```
