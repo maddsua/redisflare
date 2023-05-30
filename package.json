@@ -1,0 +1,15 @@
+{
+	"name": "redisflare",
+	"devDependencies": {
+		"wrangler": "^3.0.1"
+	},
+	"dependencies": {
+		"@cloudflare/workers-types": "^4.20230518.0",
+		"typescript": "^5.0.4"
+	},
+	"scripts": {
+		"dev": "npx wrangler dev",
+		"deploy": "npx wrangler publish",
+		"tail": "npx wrangler tail redisflare"
+	}
+}

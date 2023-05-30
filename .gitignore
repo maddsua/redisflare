@@ -1,0 +1,10 @@
+# cf wranglers junk
+.wrangler/
+
+# npm's junk
+node_modules/
+package-lock.json
+
+# security...
+.env
+wrangler.toml
