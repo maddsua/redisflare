@@ -60,7 +60,7 @@ POST example: `http://127.0.0.1:8787/set`
 Headers:
 ```javascript
 {
-	"Authorization": "Bearer token123"
+  "Authorization": "Bearer token123"
 }
 ```
 
@@ -69,8 +69,8 @@ Headers:
 Request body:
 ```json
 {
-	"record_id": "test",
-	"data": "test_data"
+  "record_id": "test",
+  "data": "test_data"
 }
 ```
 
@@ -83,7 +83,7 @@ Response:
 }
 ```
 
-## Remove record
+### Remove record
 
 Method: `GET`, `DELETE`
 
@@ -93,13 +93,12 @@ Query params:
  - `token`: string,
  - `record_id`: string
 
-Example: `http://127.0.0.1:8787/get?token=token123&record_id=test`
+Example: `http://127.0.0.1:8787/del?token=token123&record_id=test`
 
 Response: 
 ```json
 {
   "success": true,
-  "context": "get",
-  "data": "test_data"
+  "context": "del"
 }
 ```
