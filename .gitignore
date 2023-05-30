@@ -8,3 +8,6 @@ package-lock.json
 # security...
 .env
 wrangler.toml
+
+# temp junk
+temp/

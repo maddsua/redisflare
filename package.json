@@ -1,15 +1,22 @@
 {
 	"name": "redisflare",
+	"version": "1.0.0",
 	"devDependencies": {
+		"esbuild": "^0.17.19",
+		"npm-run-all": "^4.1.5",
+		"typescript": "^5.0.4",
 		"wrangler": "^3.0.1"
 	},
 	"dependencies": {
 		"@cloudflare/workers-types": "^4.20230518.0",
-		"typescript": "^5.0.4"
+		"@types/node": "^20.2.5"
 	},
 	"scripts": {
-		"dev": "npx wrangler dev",
-		"deploy": "npx wrangler publish",
-		"tail": "npx wrangler tail redisflare"
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy",
+		"tail": "wrangler tail redisflare",
+		"build-tokengen": "esbuild token-gen.ts --bundle --minify --platform=node --format=esm --outfile=temp/token-gen.mjs",
+		"run-tokengen": "node temp/token-gen.mjs",
+		"tokengen": "run-s build-tokengen run-tokengen"
 	}
 }
