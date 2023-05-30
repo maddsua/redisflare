@@ -33,7 +33,7 @@ export default {
 		const url = new URL(request.url);
 		
 		//	check that the user has a valid token
-		const bearer = request.headers.get('Authorization')?.replace('Bearer', '')?.replace(/\s/g, '') || url.searchParams.get('token');
+		const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s/, '') || url.searchParams.get('token');
 		if (bearer !== accessToken) {
 			//	fake time that is required to perform token validation
 			await sleep(Math.round(Math.random() * 250));
