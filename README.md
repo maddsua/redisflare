@@ -113,7 +113,7 @@ Query params:
  - `prefix`: string (optional)
  - `page`: string (optional)
 
-Example: `http://127.0.0.1:8787/del?token=token123&prefix=test`
+Example: `http://127.0.0.1:8787/list?token=token123&prefix=test`
 
 Response: 
 ```json
