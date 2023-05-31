@@ -4,6 +4,8 @@ Okay, so I got tired of my stack being 10014800 completely different apps and pl
 
 More specifically, I want a REST API to just get and put some strings. That's it. Upstash is really nice, but it's layoff time.
 
+Actually, I'm testing it in production, seems OK so far.
+
 ## Deploying
 
 1. Install the npm deps. Run `npm i`
