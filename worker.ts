@@ -1,4 +1,4 @@
-import { sleep, maybeJSON, RESTponse } from "./junk";
+import { maybeJSON, RESTponse, clientMetadata } from "./rest";
 
 const consts = {
 	max_record_size: 26214400,
@@ -13,8 +13,8 @@ const methods = {
 };
 
 interface Env {
-	STORAGE: KVNamespace
-	AUTHTOKEN: string
+	STORAGE: KVNamespace;
+	AUTHTOKEN: string;
 }
 
 export default {
@@ -30,25 +30,27 @@ export default {
 			}, null, 503);
 		}
 
-		//	construct a URL object
-		const url = new URL(request.url);
+		//	construct a URL objects
+		const rqUrl = new URL(request.url);
 		
-		//	check that the user has a valid token
-		const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s/, '') || url.searchParams.get('token');
+		//	look for access token on client and compate it to the valid one
+		const bearer = request.headers.get('Authorization')?.replace(/^Bearer\s/, '') || rqUrl.searchParams.get('token');
 		if (bearer !== accessToken) {
-			//	fake time that is required to perform token validation
-			await sleep(Math.round(Math.random() * 250));
+
+			console.error('Unsuccessful login attempt from:', clientMetadata(request));
+
+			//	fake required time to make a timing attack harder
+			await new Promise<void>(resolve => setTimeout(resolve, Math.round(Math.random() * 500)));
+
 			return RESTponse({
 				success: false,
 				reason: 'Unauthorized: provide a valid token to continue'
-			}, {
-				'WWW-Authenticate': 'Bearer'
-			}, 401);
+			}, null, 403);
 		}
 
 		//	extract request data
-		let recordID: string | null = url.searchParams.get('record_id');
-		let recordSetData: string | null = url.searchParams.get('data');
+		let recordID: string | null = rqUrl.searchParams.get('record_id');
+		let recordSetData: string | null = rqUrl.searchParams.get('data');
 
 		if (['PUT','POST'].some(method => method === request.method)) {
 			const requestBody = await request.text();
@@ -62,7 +64,7 @@ export default {
 			methods.delete,
 			methods.get,
 			methods.set
-		].some(method => method === url.pathname)) {
+		].some(method => method === rqUrl.pathname)) {
 
 			//	check that we have a record id
 			if (typeof recordID !== 'string') {
@@ -84,7 +86,7 @@ export default {
 		}
 
 		//	perform actions on KV
-		switch (url.pathname) {
+		switch (rqUrl.pathname) {
 			
 			case methods.get: {
 
@@ -186,8 +188,8 @@ export default {
 				}
 
 				const list = await env.STORAGE.list({
-					prefix: url.searchParams.get('prefix'),
-					cursor: url.searchParams.get('page')
+					prefix: rqUrl.searchParams.get('prefix'),
+					cursor: rqUrl.searchParams.get('page')
 				});
 
 				return RESTponse({

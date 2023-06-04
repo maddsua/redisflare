@@ -1,7 +1,7 @@
 import { getRandomValues } from "crypto";
 
 //	set token length
-const tokenLength = 32;
+const tokenLength = 64;
 
 let dict = '';
 //	populate the dictionary

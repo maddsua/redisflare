@@ -4,7 +4,6 @@ Okay, so I got tired of my stack being 10014800 completely different apps and pl
 
 More specifically, I want a REST API to just get and put some strings. That's it. Upstash is really nice, but it's layoff time.
 
-Actually, I'm testing it in production, seems OK so far.
 
 ## Deploying
 
@@ -19,6 +18,7 @@ Actually, I'm testing it in production, seems OK so far.
 5. ????
 
 6. Now you have your own Upstash 😎👍. No offense to their team, it's me just being a d.
+
 
 ## API
 
