@@ -107,9 +107,7 @@ export default {
 						success: false,
 						context: 'get record',
 						error_text: 'Request method must be GET'
-					}, 405, {
-						'Allow': 'GET'
-					});
+					}, 405, { 'Allow': 'GET' });
 				}
 
 				//	return the record
@@ -130,9 +128,7 @@ export default {
 						success: false,
 						context: 'set record',
 						error_text: 'Come on, just POST here'
-					}, 405, {
-						'Allow': 'GET, POST, PUT'
-					});
+					}, 405, { 'Allow': 'GET, POST, PUT' });
 				}
 
 				//	check that we have some data to write
@@ -174,9 +170,7 @@ export default {
 						success: false,
 						context: 'delete record',
 						error_text: 'Request method must be GET or DELETE'
-					}, 405, {
-						'Allow': 'GET, DELETE'
-					});
+					}, 405, { 'Allow': 'GET, DELETE' });
 				}
 
 				//	delete record
@@ -198,9 +192,7 @@ export default {
 						success: false,
 						context: 'list records',
 						error_text: 'Request method must be GET'
-					}, 405, {
-						'Allow': 'GET'
-					});
+					}, 405, { 'Allow': 'GET' });
 				}
 
 				const list = await env.STORAGE.list({
