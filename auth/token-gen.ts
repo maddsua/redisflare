@@ -1,4 +1,4 @@
-import { getRandomValues } from "crypto";
+import { getRandomValues } from 'crypto';
 
 //	set token length
 const tokenLength = 64;
