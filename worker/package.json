@@ -12,9 +12,6 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy",
-		"tail": "wrangler tail redisflare",
-		"build-tokengen": "esbuild token-gen.ts --bundle --minify --platform=node --format=esm --outfile=temp/token-gen.mjs",
-		"run-tokengen": "node temp/token-gen.mjs",
-		"tokengen": "run-s build-tokengen run-tokengen"
+		"tail": "wrangler tail redisflare"
 	}
 }
