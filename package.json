@@ -13,6 +13,7 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy",
-		"tail": "wrangler tail redisflare"
+		"tail": "wrangler tail redisflare",
+		"token-gen": "esbuild auth/token-gen.ts --bundle --platform=node --format=esm --outfile=temp/token-gen.mjs && node temp/token-gen.mjs"
 	}
 }

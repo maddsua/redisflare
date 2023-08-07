@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"target": "esnext",
 		"module": "esnext",
-		"lib": ["esnext"],
+		"lib": ["DOM", "ES6", "esnext"],
 		"types": [
 			"@cloudflare/workers-types",
 			"@types/node"
