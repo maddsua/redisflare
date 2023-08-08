@@ -1,5 +1,5 @@
-import { maybeJSON, clientMetadata } from "./rest";
-import { RedisflareResponse } from '../apitypes';
+import { clientMetadata } from "./rest";
+import { RedisflareResponse, RedisflareRequest } from '../apitypes';
 
 const consts = {
 	max_record_size: 26214400,
@@ -17,6 +17,8 @@ interface Env {
 	STORAGE: KVNamespace;
 	AUTHTOKEN: string;
 }
+
+export const maybeJSON = (body: string) => new Promise<RedisflareRequest | null>(resolve => (async () => resolve(JSON.parse(body)))().catch(_error => resolve(null)));
 
 const apiRespond = (response: RedisflareResponse, statusCode?: number, headers?: HeadersInit) => new Response(JSON.stringify(response), {
 	headers: Object.assign({ 'content-type': 'application/json' }, headers || {}),
@@ -62,9 +64,9 @@ export default {
 
 		if (['PUT','POST'].some(method => method === request.method)) {
 			const requestBody = await request.text();
-			const possibleJSON = request.headers.get('content-type')?.includes('json') ? maybeJSON(requestBody) : null;
-			recordSetData = recordSetData || possibleJSON?.['data'] || requestBody;
-			recordID = recordID || possibleJSON?.['record_id'];
+			const possibleJSON = request.headers.get('content-type')?.includes('json') ? await maybeJSON(requestBody) : null;
+			recordSetData = recordSetData || possibleJSON?.data || requestBody;
+			recordID = recordID || possibleJSON?.record_id;
 		}
 
 		//	these methods require a valid record_id
