@@ -16,3 +16,8 @@ export interface RedisflareListResponse extends Omit<BaseResponse, 'data'> {
 }
 
 export type RedisflareResponse = BaseResponse | RedisflareListResponse;
+
+export interface RedisflareRequest {
+	data?: string;
+	record_id?: string;
+};
