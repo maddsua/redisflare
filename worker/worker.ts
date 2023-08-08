@@ -1,4 +1,4 @@
-import { clientMetadata } from "./rest";
+import { Request as CFRequest } from '@cloudflare/workers-types';
 import { RedisflareResponse, RedisflareRequest } from '../apitypes';
 
 const consts = {
@@ -25,8 +25,10 @@ const apiRespond = (response: RedisflareResponse, statusCode?: number, headers?:
 	status: statusCode || response.error_text ? 400 : 200
 });
 
+export const clientMetadata = (rq: CFRequest) => `${rq.cf.country || "unknown country"} ${rq.cf.region || "unknown region"} ${rq.cf.city || "unknown city"}, ASN: ${rq.cf.asn}, postal: ${rq.cf.postalCode}, DMA: ${rq.cf.metroCode}`;
+
 export default {
-	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
+	async fetch(request: CFRequest, env: Env, ctx: ExecutionContext) {
 
 		//	check that the worker has a token to compare to
 		const accessToken = env.AUTHTOKEN;
