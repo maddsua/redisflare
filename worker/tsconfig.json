@@ -8,6 +8,11 @@
 			"@types/node"
 		],
 		"moduleResolution": "nodenext",
-		"noEmit": true
-	}
+		"noEmit": true,
+		"skipLibCheck": true
+	},
+	"include": [
+		"./worker.ts",
+		"../client/apitypes.ts"
+	]
 }
