@@ -13,6 +13,6 @@
 	},
 	"include": [
 		"./worker.ts",
-		"../client/apitypes.ts"
+		"../common/apitypes.ts"
 	]
 }
