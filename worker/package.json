@@ -1,0 +1,16 @@
+{
+	"private": true,
+	"name": "redisflare-worker",
+	"version": "1.1.0",
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy",
+		"tail": "wrangler tail redisflare"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20230807.0",
+		"wrangler": "^3.5.0",
+		"@types/node": "^20.2.5",
+		"typescript": "^5.0.4"
+	}
+}

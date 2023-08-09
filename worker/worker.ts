@@ -1,5 +1,4 @@
-import { Request as CFRequest } from '@cloudflare/workers-types';
-import { RedisflareResponse, RedisflareRequest } from '../apitypes';
+import { RedisflareResponse, RedisflareRequest } from '../common/apitypes';
 
 const consts = {
 	max_record_size: 26214400,
@@ -25,10 +24,10 @@ const apiRespond = (response: RedisflareResponse, statusCode?: number, headers?:
 	status: statusCode || response.error_text ? 400 : 200
 });
 
-export const clientMetadata = (rq: CFRequest) => `${rq.cf.country || "unknown country"} ${rq.cf.region || "unknown region"} ${rq.cf.city || "unknown city"}, ASN: ${rq.cf.asn}, postal: ${rq.cf.postalCode}, DMA: ${rq.cf.metroCode}`;
+export const clientMetadata = (rq: Request) => `${rq.cf.country || "unknown country"} ${rq.cf.region || "unknown region"} ${rq.cf.city || "unknown city"}, ASN: ${rq.cf.asn}, postal: ${rq.cf.postalCode}, DMA: ${rq.cf.metroCode}`;
 
 export default {
-	async fetch(request: CFRequest, env: Env, ctx: ExecutionContext) {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext) {
 
 		//	check that the worker has a token to compare to
 		const accessToken = env.AUTHTOKEN;
@@ -61,8 +60,8 @@ export default {
 		}
 
 		//	extract request data
-		let recordID: string | null = rqUrl.searchParams.get('record_id');
-		let recordSetData: string | null = rqUrl.searchParams.get('data');
+		let recordID: string | null | undefined = rqUrl.searchParams.get('record_id');
+		let recordSetData: string | null | undefined = rqUrl.searchParams.get('data');
 
 		if (['PUT','POST'].some(method => method === request.method)) {
 			const requestBody = await request.text();
