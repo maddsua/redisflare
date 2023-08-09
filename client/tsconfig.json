@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"lib": ["DOM", "ES6", "esnext"],
+		"moduleResolution": "nodenext",
+		"noEmit": false,
+		"declaration": true,
+		"skipLibCheck": true,
+		"strict": true
+	},
+	"include": [
+		"./index.ts",
+		"../common/apitypes.ts"
+	]
+}
