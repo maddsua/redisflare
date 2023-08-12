@@ -6,6 +6,8 @@
 		"build": "tsc"
 	},
 	"devDependencies": {
-		"typescript": "^5.0.4"
+		"typescript": "^5.0.4",
+		"@types/node-fetch": "^2.6.4",
+		"node-fetch": "^3.3.2"
 	}
 }
