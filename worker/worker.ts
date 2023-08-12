@@ -6,6 +6,7 @@ const consts = {
 };
 
 const methods = {
+	ping: '/ping',
 	set: '/set',
 	get: '/get',
 	delete: '/del',
@@ -100,6 +101,13 @@ export default {
 
 		//	perform actions on KV
 		switch (rqUrl.pathname) {
+
+			case methods.ping: {
+				return apiRespond({
+					success: true,
+					context: 'ping'
+				});
+			} break;
 			
 			case methods.get: {
 
