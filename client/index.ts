@@ -1,7 +1,7 @@
 import type { RedisflareResponse, RedisflareRequest } from '../common/apitypes';
 
 export interface AuthData {
-	domain: string;
+	host: string;
 	token: string;
 };
 
@@ -11,12 +11,34 @@ export interface ClientReturnValue {
 	data?: RedisflareResponse['data'];
 };
 
-type FetchType = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-let fetcher: FetchType | undefined = undefined;
-export const setFetcher = (_fetcher: FetchType) => fetcher = _fetcher;
+type FetchType = (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>;
 
-const noFetchMessage = `On Node, you need to provide a fetch function using setFetcher() before using the client. This is required due to Node devs being slowpokes with implementing proper fetch api. This error will be removed once a LTS version of Node will fully support the fetch api.`;
+export class Redisflare {
 
+	_fetch: FetchType;
+	_authdata: AuthData | undefined = undefined;
+
+	constructor(fetcher?: FetchType) {
+		if (process?.versions?.node && !fetcher) throw new Error('Hold on cowboy, it seems that youre running node, and Node is notorious in being an ass of an runtime, so you need to bring your own fetch function. Import node-fetch and pass it to this constructor. This error will be removed once a LTS version of Node will fully support the fetch api.');
+		this._fetch = fetcher || fetch;
+	}
+
+	async auth(credentials: AuthData) {
+
+		const remote = new URL(credentials.host);
+		remote.pathname = '/ping';
+		remote.searchParams.set('token', credentials.token);
+
+		return new Promise<true | Error>(resolve => this._fetch(remote).then(data => data.json()).then((data: RedisflareResponse) => {
+			const authorized = data.success && data.context === 'ping';
+			if (authorized) this._authdata = credentials;
+			resolve(authorized ? true : new Error(`Returned status: ${data.error_text || 'unknown error'}`))
+		}).catch(error => resolve(new Error((error instanceof Error)? error.message : error))));
+	};
+
+};
+
+/*
 export const get = (auth: AuthData, recordID: string) => new Promise<ClientReturnValue>(resolve => {
 
 	if (!fetcher) {
@@ -34,3 +56,4 @@ export const get = (auth: AuthData, recordID: string) => new Promise<ClientRetur
 	}).catch(error => resolve({ success: false, error: new Error((error as Error)?.message || error) }));
 
 });
+*/
