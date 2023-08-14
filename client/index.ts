@@ -11,6 +11,12 @@ export interface ClientReturnValue {
 	data?: RedisflareResponse['data'];
 };
 
+interface RestData {
+	model: `/${ 'get' | 'set' | 'list' | 'delete' | 'ping' }`;
+	recordID?: string;
+	data?: any;
+};
+
 type FetchType = (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>;
 
 export class Redisflare {
@@ -23,7 +29,43 @@ export class Redisflare {
 		this._fetch = fetcher || fetch;
 	}
 
-	async auth(credentials: AuthData) {
+	async _rest(setup: RestData): Promise<ClientReturnValue> {
+
+		if (!this._authdata) return {
+			success: false,
+			error: new Error('Client unauthorized')
+		};
+
+		const remote = new URL(this._authdata.host);
+		remote.pathname = setup.model;
+		remote.searchParams.set('token', this._authdata.host);
+		if (setup.recordID) remote.searchParams.set('record_id', setup.recordID);
+
+		return new Promise<ClientReturnValue>(resolve => {
+
+			this._fetch(remote, {
+				method: setup.data ? 'POST' : 'GET',
+				body: setup.data || undefined
+			}).then(data => data.json()).then((data: RedisflareResponse) => {
+
+				if (!data.success) resolve({
+					success: false,
+					error: new Error(data.error_text || 'Unknown error')
+				});
+
+				resolve({
+					success: data.success,
+					data: data.data
+				});
+
+			}).catch(error => resolve({
+				success: false,
+				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
+			}));
+		});
+	};
+
+	async auth(credentials: AuthData): Promise<true | Error> {
 
 		const remote = new URL(credentials.host);
 		remote.pathname = '/ping';
@@ -36,24 +78,25 @@ export class Redisflare {
 		}).catch(error => resolve(new Error((error instanceof Error)? error.message : error))));
 	};
 
+	async get(recordID: string): Promise<ClientReturnValue> {
+		return this._rest({
+			model: '/get',
+			recordID
+		});
+	};
+
+	async del(recordID: string): Promise<ClientReturnValue> {
+		return this._rest({
+			model: '/delete',
+			recordID
+		});
+	};
+
+	async set(recordID: string, data: string): Promise<ClientReturnValue> {
+		return this._rest({
+			model: '/delete',
+			recordID,
+			data
+		});
+	};
 };
-
-/*
-export const get = (auth: AuthData, recordID: string) => new Promise<ClientReturnValue>(resolve => {
-
-	if (!fetcher) {
-		resolve({ success: false, error: new Error(noFetchMessage) });
-		return;
-	}
-
-	const remoteUrl = new URL(`https://${auth.domain}/get`);
-	remoteUrl.searchParams.append('record_id', recordID);
-	remoteUrl.searchParams.append('token', auth.token);
-
-	fetcher(remoteUrl).then(rsp => rsp.json()).then((data: RedisflareResponse) => {
-		if (!data.success) throw new Error(data.error_text || 'Unknown error');
-		resolve(data);
-	}).catch(error => resolve({ success: false, error: new Error((error as Error)?.message || error) }));
-
-});
-*/
