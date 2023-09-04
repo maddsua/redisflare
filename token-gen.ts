@@ -11,7 +11,7 @@ let uniqueToken = '';
 
 //	map noise to characters from the dictionary
 for (let i = 0; i < noiseArray.length; i++) {
-	const charIdx = Math.round(noiseArray[i] / 255 * dict.length);
+	const charIdx = Math.floor(noiseArray[i] / 256 * dict.length);
 	uniqueToken += dict[charIdx];
 }
 
