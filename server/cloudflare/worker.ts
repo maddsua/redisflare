@@ -1,4 +1,4 @@
-import type { APIResponse, ClientRequest, InstanceHealthReportResponse, AuthCheckResponse } from '../../types/restapi';
+import type { APIResponse, ClientRequest } from '../../types/restapi';
 import type { AccessToken } from '../../types/auth';
 
 const cf_limits = {
@@ -276,6 +276,6 @@ export default {
 		return mkRestResponse({
 			success: false,
 			error_text: 'requested path did not match any'
-		}, 400)
+		}, 400);
 	}
 };
