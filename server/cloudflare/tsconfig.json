@@ -2,12 +2,17 @@
 	"compilerOptions": {
 		"target": "esnext",
 		"module": "esnext",
-		"lib": ["esnext"],
+		"lib": ["ES6", "esnext"],
 		"types": [
 			"@cloudflare/workers-types",
 			"@types/node"
 		],
 		"moduleResolution": "nodenext",
-		"noEmit": true
-	}
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strictNullChecks": true
+	},
+	"include": [
+		"./worker.ts"
+	]
 }
