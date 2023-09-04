@@ -148,7 +148,7 @@ export default {
 				} else if (['POST', 'PUT', 'PATCH'].some(method => method === request.method)) {
 
 					const isTextContentType = request.headers.get('content-type')?.includes('text');
-					const recordContent = requestPayload?.data || requestUrl.searchParams.get('data') || (isTextContentType ? await request.text() : undefined);
+					const recordContent = requestPayload?.data || (isTextContentType ? await request.text() : undefined);
 
 					let successWriteCode = 200;
 					let successWriteText: 'create' | 'update' = 'update';

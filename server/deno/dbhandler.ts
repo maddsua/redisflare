@@ -131,7 +131,8 @@ export default async (request: Request, env: Deno.Env) => {
 
 		} else if (['POST', 'PUT', 'PATCH'].some(method => method === request.method)) {
 
-			const recordContent = requestPayload?.data || requestUrl.searchParams.get('data') || (request.headers.get('content-type')?.includes('text') ? await request.text() : undefined);
+			const isTextContentType = request.headers.get('content-type')?.includes('text');
+			const recordContent = requestPayload?.data || (isTextContentType ? await request.text() : undefined);
 			let successWriteCode = 200;
 			let successWriteText: 'create' | 'update' = 'update';
 
