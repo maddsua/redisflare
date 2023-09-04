@@ -3,6 +3,7 @@
 	"deno.lint": false,
 	"deno.enablePaths": [
 		"client/deno",
-		"server/deno"
+		"server/deno",
+		"test/client/deno"
 	]
 }
