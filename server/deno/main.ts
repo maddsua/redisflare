@@ -35,7 +35,7 @@ async function httpHandler(conn: Deno.Conn) {
 
 			const errorResponse = new Response(JSON.stringify({
 				success: false,
-				error_message: 'instance have crashed'
+				error_text: 'instance have crashed'
 			}), {
 				headers: {
 					'content-type': 'application/json'
