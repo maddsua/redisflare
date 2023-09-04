@@ -32,12 +32,12 @@ export class Redisflare {
 
 		const remote = new URL(this._authdata.host);
 		remote.pathname = '/crud';
-		remote.searchParams.set('token', this._authdata.host);
+		remote.searchParams.set('token', this._authdata.token);
 		remote.searchParams.set('record_id', record_id);
 		return remote;
 	};
 
-	async auth(authData: ClientAuthData): Promise<true | Error> {
+	async authenticate(authData: ClientAuthData): Promise<true | Error> {
 
 		if (!authData.host.startsWith('http'))
 			return new Error('Host should use http schema');
@@ -45,6 +45,7 @@ export class Redisflare {
 		const remote = new URL(authData.host);
 		remote.pathname = '/auth';
 		remote.searchParams.set('token', authData.token);
+		remote.searchParams.set('report', 'json');
 
 		return new Promise<true | Error>(resolve => fetch(remote).then(data => data.json()).then((data: APIResponse) => {
 			const authorized = 'rights' in data && data.success;
@@ -78,30 +79,6 @@ export class Redisflare {
 		}
 	};
 
-	async del(record_id: string): Promise<ClientReturnValue> {
-
-		try {
-
-			const remote = this._formatCRUDEndpointURL(record_id);
-			const reponse = await (await fetch(remote, {
-				method: 'DELETE'
-			})).json() as APIResponse;
-
-			if (!reponse.success) throw new Error(reponse.error_text);
-
-			return {
-				success: true,
-				data: (reponse as CRUDResponse).data as string | null
-			};
-			
-		} catch (error) {
-			return {
-				success: false,
-				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
-			}
-		}
-	};
-
 	async set(record_id: string, data: string): Promise<ClientReturnValue> {
 
 		try {
@@ -119,7 +96,31 @@ export class Redisflare {
 
 			return {
 				success: true,
-				data: (reponse as CRUDResponse).data as string | null
+				data: null
+			};
+			
+		} catch (error) {
+			return {
+				success: false,
+				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
+			}
+		}
+	};
+
+	async del(record_id: string): Promise<ClientReturnValue> {
+
+		try {
+
+			const remote = this._formatCRUDEndpointURL(record_id);
+			const reponse = await (await fetch(remote, {
+				method: 'DELETE'
+			})).json() as APIResponse;
+
+			if (!reponse.success) throw new Error(reponse.error_text);
+
+			return {
+				success: true,
+				data: null
 			};
 			
 		} catch (error) {
