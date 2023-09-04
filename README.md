@@ -12,7 +12,7 @@ In terms of deploying, you have two options for now:
 - Deploy to cloudflare workers, here is their docs: <https://developers.cloudflare.com/workers/>
 - Deploy standalone version (powered by Deno and is using localStorage API under the hood) to docker container
 
-Don't forget to generate a secure access token, or else some scriptkiddy may bite you in the ass. Use `tokengen` to do that.
+Don't forget to generate a secure access token, or else some scriptkiddy may bite you in the ass. Use `deno task tokengen` to do that ([requires Deno](https://github.com/denoland/deno/releases)).
 
 ## API
 

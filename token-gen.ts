@@ -1,11 +1,10 @@
-import { getRandomValues } from 'crypto';
 
 //	set token length
 const tokenLength = 64;
 
 //	get some random noise
 const noiseArray = new Uint8Array(tokenLength);
-getRandomValues(noiseArray);
+crypto.getRandomValues(noiseArray);
 
 const dict = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyza012345678910';
 let uniqueToken = '';

@@ -4,6 +4,7 @@
 	"deno.enablePaths": [
 		"client/deno",
 		"server/deno",
-		"test/client/deno"
+		"test/client/deno",
+		"token-gen.ts"
 	]
 }
