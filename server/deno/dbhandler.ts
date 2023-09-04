@@ -104,105 +104,96 @@ export default async (request: Request, env: Deno.Env) => {
 		}*/
 
 		//	perform CRUD ops depending on http method
-		try {
 
-			if (request.method === 'OPTIONS') {
+		if (request.method === 'OPTIONS') {
 
-				return new Response(null, {
-					headers: {
-						Allow: 'OPTIONS, GET, POST, PUT, PATCH, DELETE'
-					},
-					status: 204
-				});
+			return new Response(null, {
+				headers: {
+					Allow: 'OPTIONS, GET, POST, PUT, PATCH, DELETE'
+				},
+				status: 204
+			});
 
-			} else if (request.method === 'GET') {
-				const recordContent = localStorage.getItem(record_id);
-				return mkRestResponse({
-					success: true,
-					context: 'read',
-					data: recordContent || null
-				});
-			
-			} else if (!auth.write_access) {
+		} else if (request.method === 'GET') {
+			const recordContent = localStorage.getItem(record_id);
+			return mkRestResponse({
+				success: true,
+				context: 'read',
+				data: recordContent || null
+			});
+		
+		} else if (!auth.write_access) {
 
-				return mkRestResponse({
-					success: false,
-					error_text: 'write access denied'
-				});
-
-			} else if (['POST', 'PUT', 'PATCH'].some(method => method === request.method)) {
-
-				const recordContent = requestPayload?.data || requestUrl.searchParams.get('data') || (request.headers.get('content-type')?.includes('text') ? await request.text() : undefined);
-				let successWriteCode = 200;
-				let successWriteText: 'create' | 'update' = 'update';
-
-				//	check that we have some data to write
-				if (!recordContent?.length) {
-					console.warn('No data set');
-					return mkRestResponse({
-						success: false,
-						error_text: 'no data payload received'
-					}, 400);
-				}
-
-				//	and the data is not too big
-				/*if (recordContent.length > cf_limits.max_record_size) {
-					console.warn('Data length too long');
-					return mkRestResponse({
-						success: false,
-						error_text: `data size too big. ${cf_limits.max_record_size} bytes MAX`
-					}, 400);
-				}*/
-
-				//	PATCH can only be used to update existing record
-				if (request.method === 'PATCH') {
-					successWriteCode = 202;
-					const existingRecord = localStorage.getItem(record_id);
-					if (!existingRecord) return mkRestResponse({
-						success: false,
-						error_text: `cannot update record: record does not exist`
-					}, 400);
-				
-				}
-				
-				//	PUT can only be used to create a new record
-				else if (request.method === 'PUT') {
-					successWriteCode = 201;
-					successWriteText = 'create';
-					const existingRecord = localStorage.getItem(record_id);
-					if (existingRecord) return mkRestResponse({
-						success: false,
-						error_text: `cannot create record: record already exist`
-					}, 400);
-				}
-
-				//	POST method just bypasses the previous logic altogether
-
-				//	perform write and return
-				await localStorage.setItem(record_id, recordContent);
-
-				return mkRestResponse({
-					success: true,
-					context: successWriteText,
-				}, successWriteCode);
-
-			} else if (request.method === 'DELETE') {
-
-				//	delete record
-				await localStorage.removeItem(record_id);
-
-				return mkRestResponse({
-					success: true,
-					context: 'delete'
-				}, 202);
-			}
-			
-		} catch (error) {
-			console.error('CRUD operation failed:', error);
 			return mkRestResponse({
 				success: false,
-				error_text: 'CRUD operation failed'
-			}, 500);
+				error_text: 'write access denied'
+			});
+
+		} else if (['POST', 'PUT', 'PATCH'].some(method => method === request.method)) {
+
+			const recordContent = requestPayload?.data || requestUrl.searchParams.get('data') || (request.headers.get('content-type')?.includes('text') ? await request.text() : undefined);
+			let successWriteCode = 200;
+			let successWriteText: 'create' | 'update' = 'update';
+
+			//	check that we have some data to write
+			if (!recordContent?.length) {
+				console.warn('No data set');
+				return mkRestResponse({
+					success: false,
+					error_text: 'no data payload received'
+				}, 400);
+			}
+
+			//	and the data is not too big
+			/*if (recordContent.length > cf_limits.max_record_size) {
+				console.warn('Data length too long');
+				return mkRestResponse({
+					success: false,
+					error_text: `data size too big. ${cf_limits.max_record_size} bytes MAX`
+				}, 400);
+			}*/
+
+			//	PATCH can only be used to update existing record
+			if (request.method === 'PATCH') {
+				successWriteCode = 202;
+				const existingRecord = localStorage.getItem(record_id);
+				if (!existingRecord) return mkRestResponse({
+					success: false,
+					error_text: `cannot update record: record does not exist`
+				}, 400);
+			
+			}
+			
+			//	PUT can only be used to create a new record
+			else if (request.method === 'PUT') {
+				successWriteCode = 201;
+				successWriteText = 'create';
+				const existingRecord = localStorage.getItem(record_id);
+				if (existingRecord) return mkRestResponse({
+					success: false,
+					error_text: `cannot create record: record already exist`
+				}, 400);
+			}
+
+			//	POST method just bypasses the previous logic altogether
+
+			//	perform write and return
+			localStorage.setItem(record_id, recordContent);
+
+			return mkRestResponse({
+				success: true,
+				context: successWriteText,
+			}, successWriteCode);
+
+		} else if (request.method === 'DELETE') {
+
+			//	delete record
+			localStorage.removeItem(record_id);
+
+			return mkRestResponse({
+				success: true,
+				context: 'delete'
+			}, 202);
 		}
 
 		return mkRestResponse({
@@ -230,25 +221,16 @@ export default async (request: Request, env: Deno.Env) => {
 			}, 405, { 'Allow': 'GET' });
 		}
 
-		try {
 
-			const list = Object.entries(localStorage);
+		const list = Object.entries(localStorage);
 
-			return mkRestResponse({
-				success: true,
-				entries: list.map(([key, _value]) => ({
-					record_id: key,
-				})),
-				list_complete: true
-			}, 200);
-			
-		} catch (error) {
-			console.error('LIST operation failed:', error);
-			return mkRestResponse({
-				success: false,
-				error_text: 'LIST operation failed'
-			}, 500);
-		}
+		return mkRestResponse({
+			success: true,
+			entries: list.map(([key, _value]) => ({
+				record_id: key,
+			})),
+			list_complete: true
+		}, 200);
 	}
 
 	//	fallback response
