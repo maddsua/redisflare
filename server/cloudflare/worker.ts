@@ -16,7 +16,7 @@ const clientMetadata = (rq: Request) => `${rq?.cf?.country || 'unknown country'}
 
 const mkRestResponse = (response: APIResponse, statusCode?: number, headers?: Record<string, string>) => new Response(JSON.stringify(response), {
 	headers: Object.assign({ 'content-type': 'application/json' }, headers || {}),
-	status: statusCode || response.success ? 200 : 400
+	status: statusCode || (response.success ? 200 : 400)
 });
 
 export default {
@@ -91,10 +91,10 @@ export default {
 			if (requestUrl.searchParams.get('report') === 'json') return mkRestResponse({
 				success: true,
 				rights: auth.write_access ? 'rw' : 'r'
-			}, 204);
+			});
 
 			return new Response(null, {
-				status: 204
+				status: 200
 			});
 		}
 
