@@ -23,7 +23,27 @@ async function httpHandler(conn: Deno.Conn) {
 	const httpConn = Deno.serveHttp(conn);
 
 	for await (const requestEvent of httpConn) {
-		const response = await dbhandler(requestEvent.request, Deno.env);
-		requestEvent.respondWith(response);
+
+		try {
+
+			const response = await dbhandler(requestEvent.request, Deno.env);
+			requestEvent.respondWith(response);
+
+		} catch (error) {
+
+			console.error('Unhandled runtime error:', error);
+
+			const errorResponse = new Response(JSON.stringify({
+				success: false,
+				error_message: 'instance have crashed'
+			}), {
+				headers: {
+					'content-type': 'application/json'
+				},
+				status: 500
+			});
+
+			requestEvent.respondWith(errorResponse)
+		}
 	}
 }
