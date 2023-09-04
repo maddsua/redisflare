@@ -7,109 +7,111 @@ More specifically, I want a REST API to just get and put some strings. That's it
 
 ## Deploying
 
-1. Install the npm deps. Run `npm i`
+In terms of deploying, you have two options for now:
 
-2. Generate an access token. Run `npm run tokengen`. Paste it to the `wrangler.toml`. Check the example config in [wrangler.ex.toml](./wrangler.ex.toml)
+- Deploy to cloudflare workers, here is their docs: <https://developers.cloudflare.com/workers/>
+- Deploy standalone version (powered by Deno and is using localStorage API under the hood) to docker container
 
-3. Create KV storage on Cloudflare. Use wrangler CLI or their UI. Copy it's id to `wrangler.toml`
-
-4. Run `npm run deploy` to deploy it, Captain.
-
-5. ????
-
-6. Now you have your own Upstash 😎👍. No offense to their team, it's me just being a d.
-
+Don't forget to generate a secure access token, or else some scriptkiddy may bite you in the ass. Use `tokengen` to do that.
 
 ## API
 
-### Get record
+### Authentication
+
+Add a `token` search query param to the request, an `Authorization` header with format `Bearer your_token` or add a `auth_token` property on a JSON object you send in POST, PUT or PATCH requests.
+
+\* Note: The token is just a random string not up to any standards, and because of that, it is not required to prefix it with "Bearer". But you may want to do that for whatever reason
+
+### CRUD opertations
+
+Endpoint: `https://hostname/` or `https://hostname/crud`
+
+### Read
 
 Method: `GET`
-
-Url: `{hostname}/get`
 
 Query params:
  - `token`: string
  - `record_id`: string
 
-Example: `http://127.0.0.1:8787/get?token=token123&record_id=test`
+Headers: 
+- Authorization: Bearer token123
+
+Example: `http://127.0.0.1:8787/crud?token=token123&record_id=test`
 
 Response: 
 ```json
 {
   "success": true,
-  "context": "get",
+  "context": "read",
   "data": "test_data"
 }
 ```
 
-### Set record
+### Create, Update
 
-Methods: `POST`, `GET`
+Methods: `POST`, `PUT`, `PATCH`
 
-Url: `{hostname}/set`
+The difference between those methods as follows:
 
-GET example: `http://127.0.0.1:8787/set?token=token123&record_id=test&data=test_data`
+- PUT: Creates a new record, fails if one already exist
+- PATCH: Updates a record, fails if one does not exist
+- POST: Bypasses the former logic and just writes data anyway
 
 Query params:
- - `token`: string (optional, for GET method)
- - `record_id`: string (optional, for GET method)
- - `data`: string (optional, for GET method)
+ - `token`: string
+ - `record_id`: string
 
+Headers: 
+- Authorization: Bearer token123
 
-POST example: `http://127.0.0.1:8787/set`
-
-Headers:
-```javascript
-{
-  "Authorization": "Bearer token123"
-}
-```
-
-\* Note: The token is just a random string not up to any standards, and because of that, it is not required to prefix it with "Bearer". But you may want to do that for whatever reason
+GET example: `http://127.0.0.1:8787/crud?token=token123&record_id=test&data=test_data`
 
 Request body:
 ```json
 {
+  "auth_token": "token123",
   "record_id": "test",
   "data": "test_data"
 }
 ```
+
+Alternatively, you can set `Content-Type` to text/plain and send the entire body as record value!
 
 Response:
 
 ```json
 {
   "success": true,
-  "context": "set"
+  "context": "create"
 }
 ```
 
-### Remove record
+### Delete
 
-Method: `GET`, `DELETE`
-
-Url: `{hostname}/del`
+Method: `DELETE`
 
 Query params:
  - `token`: string
  - `record_id`: string
 
-Example: `http://127.0.0.1:8787/del?token=token123&record_id=test`
+Example: `http://127.0.0.1:8787/crud?token=token123&record_id=test`
 
 Response: 
 ```json
 {
   "success": true,
-  "context": "del"
+  "context": "delete"
 }
 ```
 
-### List records
+## Extended operations
+
+### List all records
 
 Method: `GET`
 
-Url: `{hostname}/list`
+Endpoint: `https://hostname/list`
 
 Query params:
  - `prefix`: string (optional)
