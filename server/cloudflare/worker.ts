@@ -131,7 +131,7 @@ export default {
 					});
 
 				} else if (request.method === 'GET') {
-					const recordContent = await env.STORAGE.get(record_id)
+					const recordContent = await env.STORAGE.get(record_id);
 					return mkRestResponse({
 						success: true,
 						context: 'read',
