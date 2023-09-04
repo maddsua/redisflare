@@ -9,10 +9,10 @@
 		],
 		"moduleResolution": "nodenext",
 		"noEmit": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"strictNullChecks": true
 	},
 	"include": [
-		"./worker.ts",
-		"../common/apitypes.ts"
+		"./worker.ts"
 	]
 }
