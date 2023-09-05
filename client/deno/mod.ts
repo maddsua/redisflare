@@ -4,19 +4,9 @@ import type { ListedRecord } from '../../types/kvExtended.ts';
 interface ClientAuthData {
 	host: string;
 	token: string;
-};
+}
 
-type ReturnSuccess = {
-	success: true;
-};
-type ReturnFailure = {
-	success: false;
-	error: Error;
-};
-
-type SetAndDelRetVal = ReturnSuccess | ReturnFailure;
-
-export const validateCredentials = (creds?: Partial<ClientAuthData> | null) => {
+export const validateCredentials = (creds?: Partial<ClientAuthData> | null): Error | null => {
 
 	if (!creds) return new Error('[Client auth failed] Client unauthorized');
 
@@ -29,7 +19,7 @@ export const validateCredentials = (creds?: Partial<ClientAuthData> | null) => {
 		return new Error('[Client auth failed] Access token format invalid');
 
 	return null;
-};
+}
 
 export class Redisflare {
 
@@ -39,7 +29,7 @@ export class Redisflare {
 	constructor(authData?: ClientAuthData) {
 		if (!authData) return;
 		this._authdata = authData;
-	};
+	}
 
 	async authenticate(authData: ClientAuthData): Promise<true | Error> {
 
@@ -51,120 +41,94 @@ export class Redisflare {
 		remote.searchParams.set('token', authData.token);
 		remote.searchParams.set('report', 'json');
 
-		return new Promise<true | Error>(resolve => fetch(remote).then(data => data.json()).then((data: APIResponse) => {
-			const authorized = 'rights' in data && data.success;
-			if (authorized) {
-				this._authdata = authData;
-				this._rights = data.rights;
+		const response = await fetch(remote).then(data => data.json()) as APIResponse;
+
+		const authorized = 'rights' in response && response.success;
+		if (authorized) {
+			this._authdata = authData;
+			this._rights = response.rights;
+			return true;
+		}
+
+		return new Error(`Auth error: ${(response as BaseErrorResponse).error_text || 'unknown error'}`)
+	}
+
+	async get(record_id: string): Promise<string | null> {
+
+		const credsError = validateCredentials(this._authdata);
+		if (credsError) throw credsError;
+
+		const requestUrl = new URL(this._authdata!.host);
+		requestUrl.searchParams.set('record_id', record_id);
+
+		const reponse = await fetch(requestUrl, {
+			headers: {
+				'Authorization': `Bearer ${this._authdata!.token}`
 			}
-			resolve(authorized ? true : new Error(`Auth error: ${(data as BaseErrorResponse).error_text || 'unknown error'}`))
-		}).catch(error => resolve(new Error((error instanceof Error)? error.message : error))));
-	};
+		}).then(data => data.json()) as ReadResponse;
 
-	async get(record_id: string): Promise<{ error: Error } | { data: string | null }> {
+		if (!reponse.success) throw new Error(reponse.error_text);
+		return reponse.data;
+	}
 
-		try {
+	async set(record_id: string, data: string): Promise<void> {
 
-			const credsError = validateCredentials(this._authdata);
-			if (credsError) throw credsError;
+		const credsError = validateCredentials(this._authdata);
+		if (credsError) throw credsError;
 
-			const requestUrl = new URL(this._authdata!.host);
-			requestUrl.searchParams.set('record_id', record_id);
+		const requestUrl = new URL(this._authdata!.host);
+		requestUrl.searchParams.set('record_id', record_id);
 
-			const reponse = await (await fetch(requestUrl, {
-				headers: {
-					'Authorization': `Bearer ${this._authdata!.token}`
-				}
-			})).json() as ReadResponse;
+		const reponse = await fetch(requestUrl, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${this._authdata!.token}`,
+				'content-type': 'text/plain'
+			},
+			body: data
+		}).then(data => data.json()) as APIResponse;
 
-			if (!reponse.success) throw new Error(reponse.error_text);
-			return { data: reponse.data };
+		if (!reponse.success) throw new Error(reponse.error_text);
+	}
 
-		} catch (error) {
-			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
-		}
-	};
+	async del(record_id: string): Promise<void> {
 
-	async set(record_id: string, data: string): Promise<{ error: Error | undefined }> {
+		const credsError = validateCredentials(this._authdata);
+		if (credsError) throw credsError;
 
-		try {
+		const requestUrl = new URL(this._authdata!.host);
+		requestUrl.searchParams.set('record_id', record_id);
 
-			const credsError = validateCredentials(this._authdata);
-			if (credsError) throw credsError;
+		const reponse = await fetch(requestUrl, {
+			method: 'DELETE',
+			headers: {
+				'Authorization': `Bearer ${this._authdata!.token}`
+			}
+		}).then(data => data.json()) as ListResponse;
 
-			const requestUrl = new URL(this._authdata!.host);
-			requestUrl.searchParams.set('record_id', record_id);
+		if (!reponse.success) throw new Error(reponse.error_text);
+	}
 
-			const reponse = await (await fetch(requestUrl, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${this._authdata!.token}`,
-					'content-type': 'text/plain'
-				},
-				body: data
-			})).json() as APIResponse;
+	async list(props?: { prefix?: string; page?: string }): Promise<ListedRecord> {
 
-			if (!reponse.success) throw new Error(reponse.error_text);
+		const credsError = validateCredentials(this._authdata);
+		if (credsError) throw credsError;
 
-			return { error: undefined };
-			
-		} catch (error) {
-			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
-		}
-	};
+		const requestUrl = new URL(this._authdata!.host);
+		requestUrl.pathname = '/list';
+		Object.entries(props || {}).filter(item => item[0] && item[1]).forEach(item => requestUrl.searchParams.set(item[0], item[1]));
 
-	async del(record_id: string): Promise<{ error: Error | undefined }> {
+		const reponse = await fetch(requestUrl, {
+			headers: {
+				'Authorization': `Bearer ${this._authdata!.token}`
+			}
+		}).then(data => data.json()) as ListResponse;
 
-		try {
+		if (!reponse.success) throw new Error(reponse.error_text);
 
-			const credsError = validateCredentials(this._authdata);
-			if (credsError) throw credsError;
-
-			const requestUrl = new URL(this._authdata!.host);
-			requestUrl.searchParams.set('record_id', record_id);
-
-			const reponse = await (await fetch(requestUrl, {
-				method: 'DELETE',
-				headers: {
-					'Authorization': `Bearer ${this._authdata!.token}`
-				}
-			})).json() as ListResponse;
-
-			if (!reponse.success) throw new Error(reponse.error_text);
-
-			return { error: undefined };
-			
-		} catch (error) {
-			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
-		}
-	};
-
-	async list(props?: { prefix?: string; page?: string }): Promise<ListedRecord | { error: Error }> {
-
-		try {
-
-			const credsError = validateCredentials(this._authdata);
-			if (credsError) throw credsError;
-
-			const requestUrl = new URL(this._authdata!.host);
-			requestUrl.pathname = '/list';
-			Object.entries(props || {}).filter(item => item[0] && item[1]).forEach(item => requestUrl.searchParams.set(item[0], item[1]));
-
-			const reponse = await (await fetch(requestUrl, {
-				headers: {
-					'Authorization': `Bearer ${this._authdata!.token}`
-				}
-			})).json() as ListResponse;
-
-			if (!reponse.success) throw new Error(reponse.error_text);
-
-			return {
-				entries: reponse.entries,
-				list_complete: reponse.list_complete
-			};
-
-		} catch (error) {
-			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
-		}
-	};
-};
+		return {
+			entries: reponse.entries,
+			list_complete: reponse.list_complete
+		};
+	}
+}
