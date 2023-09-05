@@ -1,4 +1,4 @@
-import type { APIResponse, ClientRequest } from '../../types/restapi';
+import type { APIResponse, MutationRequest } from '../../types/restapi';
 import type { AccessToken } from '../../types/auth';
 
 const cf_limits = {
@@ -62,7 +62,7 @@ export default {
 
 		//	retrieve request payload
 		const isJsonContentType = request.headers.get('content-type')?.includes('json');
-		const requestPayload = isJsonContentType ? await (() => new Promise<ClientRequest | null>(resolve => (async () => {
+		const requestPayload = isJsonContentType ? await (() => new Promise<MutationRequest | null>(resolve => (async () => {
 			const body = await request.text();
 			resolve(JSON.parse(body));
 		})().catch(_error => resolve(null))))() : null;
@@ -229,7 +229,6 @@ export default {
 		}
 
 		//	extended kv ops
-
 		//	list all records
 		if (requestUrl.pathname === '/list') {
 

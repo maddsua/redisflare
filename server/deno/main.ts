@@ -28,6 +28,7 @@ async function httpHandler(conn: Deno.Conn) {
 
 			const response = await dbhandler(requestEvent.request, Deno.env);
 			requestEvent.respondWith(response);
+			console.log(`${requestEvent.request.method} ${requestEvent.request.url} : ${response.status}`);
 
 		} catch (error) {
 

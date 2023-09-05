@@ -1,20 +1,35 @@
-import type { APIResponse, BaseErrorResponse, CRUDResponse } from '../../types/restapi.ts';
+import type { APIResponse, BaseErrorResponse, ReadResponse, ListResponse } from '../../types/restapi.ts';
+import type { ListedRecord } from '../../types/kvExtended.ts';
 
 interface ClientAuthData {
 	host: string;
 	token: string;
 };
 
-interface ClientReturnSuccess {
+type ReturnSuccess = {
 	success: true;
-	data: string | null;
 };
-interface ClientReturnFailure {
+type ReturnFailure = {
 	success: false;
 	error: Error;
 };
 
-type ClientReturnValue = ClientReturnSuccess | ClientReturnFailure;
+type SetAndDelRetVal = ReturnSuccess | ReturnFailure;
+
+export const validateCredentials = (creds?: Partial<ClientAuthData> | null) => {
+
+	if (!creds) return new Error('[Client auth failed] Client unauthorized');
+
+	if (!creds.host) return new Error('[Client auth failed] Host address missing');
+	if (!/^http?s:\/\/(([a-z0-9\-\_]+\.)+[a-z]+)|(localhost)(:\d+)?\/?$/i.test(creds.host))
+		return new Error('[Client auth failed] Hosd address format invalid');
+
+	if (!creds.token) return new Error('[Client auth failed] Access token missing');
+	if (!/^rdfl_/i.test(creds.token))
+		return new Error('[Client auth failed] Access token format invalid');
+
+	return null;
+};
 
 export class Redisflare {
 
@@ -24,17 +39,6 @@ export class Redisflare {
 	constructor(authData?: ClientAuthData) {
 		if (!authData) return;
 		this._authdata = authData;
-	};
-
-	_formatCRUDEndpointURL(record_id: string) {
-
-		if (!this._authdata) throw new Error('Client unauthorized');
-
-		const remote = new URL(this._authdata.host);
-		remote.pathname = '/crud';
-		remote.searchParams.set('token', this._authdata.token);
-		remote.searchParams.set('record_id', record_id);
-		return remote;
 	};
 
 	async authenticate(authData: ClientAuthData): Promise<true | Error> {
@@ -57,36 +61,44 @@ export class Redisflare {
 		}).catch(error => resolve(new Error((error instanceof Error)? error.message : error))));
 	};
 
-	async get(record_id: string): Promise<ClientReturnValue> {
+	async get(record_id: string): Promise<{ error: Error } | { data: string | null }> {
 
 		try {
 
-			const remote = this._formatCRUDEndpointURL(record_id);
-			const reponse = await (await fetch(remote)).json() as APIResponse;
+			const credsError = validateCredentials(this._authdata);
+			if (credsError) throw credsError;
+
+			const requestUrl = new URL(this._authdata!.host);
+			requestUrl.searchParams.set('record_id', record_id);
+
+			const reponse = await (await fetch(requestUrl, {
+				headers: {
+					'Authorization': `Bearer ${this._authdata!.token}`
+				}
+			})).json() as ReadResponse;
 
 			if (!reponse.success) throw new Error(reponse.error_text);
+			return { data: reponse.data };
 
-			return {
-				success: true,
-				data: (reponse as CRUDResponse).data as string | null
-			};
-			
 		} catch (error) {
-			return {
-				success: false,
-				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
-			}
+			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
 		}
 	};
 
-	async set(record_id: string, data: string): Promise<ClientReturnValue> {
+	async set(record_id: string, data: string): Promise<{ error: Error | undefined }> {
 
 		try {
 
-			const remote = this._formatCRUDEndpointURL(record_id);
-			const reponse = await (await fetch(remote, {
+			const credsError = validateCredentials(this._authdata);
+			if (credsError) throw credsError;
+
+			const requestUrl = new URL(this._authdata!.host);
+			requestUrl.searchParams.set('record_id', record_id);
+
+			const reponse = await (await fetch(requestUrl, {
 				method: 'POST',
 				headers: {
+					'Authorization': `Bearer ${this._authdata!.token}`,
 					'content-type': 'text/plain'
 				},
 				body: data
@@ -94,40 +106,65 @@ export class Redisflare {
 
 			if (!reponse.success) throw new Error(reponse.error_text);
 
-			return {
-				success: true,
-				data: null
-			};
+			return { error: undefined };
 			
 		} catch (error) {
-			return {
-				success: false,
-				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
-			}
+			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
 		}
 	};
 
-	async del(record_id: string): Promise<ClientReturnValue> {
+	async del(record_id: string): Promise<{ error: Error | undefined }> {
 
 		try {
 
-			const remote = this._formatCRUDEndpointURL(record_id);
-			const reponse = await (await fetch(remote, {
-				method: 'DELETE'
-			})).json() as APIResponse;
+			const credsError = validateCredentials(this._authdata);
+			if (credsError) throw credsError;
+
+			const requestUrl = new URL(this._authdata!.host);
+			requestUrl.searchParams.set('record_id', record_id);
+
+			const reponse = await (await fetch(requestUrl, {
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Bearer ${this._authdata!.token}`
+				}
+			})).json() as ListResponse;
+
+			if (!reponse.success) throw new Error(reponse.error_text);
+
+			return { error: undefined };
+			
+		} catch (error) {
+			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
+		}
+	};
+
+	async list(props?: { prefix?: string; page?: string }): Promise<ListedRecord | { error: Error }> {
+
+		try {
+
+			const credsError = validateCredentials(this._authdata);
+			if (credsError) throw credsError;
+
+			const requestUrl = new URL(this._authdata!.host);
+			requestUrl.pathname = '/list';
+			Object.entries(props || {}).filter(item => item[0] && item[1]).forEach(item => requestUrl.searchParams.set(item[0], item[1]));
+
+			const reponse = await (await fetch(requestUrl, {
+				headers: {
+					'Authorization': `Bearer ${this._authdata!.token}`
+				}
+			})).json() as ListResponse;
 
 			if (!reponse.success) throw new Error(reponse.error_text);
 
 			return {
-				success: true,
-				data: null
+				entries: reponse.entries,
+				list_complete: reponse.list_complete
 			};
-			
+
 		} catch (error) {
-			return {
-				success: false,
-				error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error')
-			}
+			return { error: new Error((error instanceof Error ? error.message : error ) || 'Unknown error') };
 		}
 	};
 };

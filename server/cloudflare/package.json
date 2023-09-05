@@ -1,7 +1,7 @@
 {
 	"private": true,
 	"name": "redisflare-worker",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy",

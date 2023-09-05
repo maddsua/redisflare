@@ -1,4 +1,4 @@
-import type { APIResponse, ClientRequest } from '../../types/restapi.ts';
+import type { APIResponse, MutationRequest } from '../../types/restapi.ts';
 import type { AccessToken } from '../../types/auth.ts';
 
 const mkRestResponse = (response: APIResponse, statusCode?: number, headers?: Record<string, string>) => new Response(JSON.stringify(response), {
@@ -47,7 +47,7 @@ export default async (request: Request, env: Deno.Env) => {
 
 	//	retrieve request payload
 	const isJsonContentType = request.headers.get('content-type')?.includes('json');
-	const requestPayload = isJsonContentType ? await (() => new Promise<ClientRequest | null>(resolve => (async () => {
+	const requestPayload = isJsonContentType ? await (() => new Promise<MutationRequest | null>(resolve => (async () => {
 		const body = await request.text();
 		resolve(JSON.parse(body));
 	})().catch(_error => resolve(null))))() : null;
@@ -76,10 +76,10 @@ export default async (request: Request, env: Deno.Env) => {
 		if (requestUrl.searchParams.get('report') === 'json') return mkRestResponse({
 			success: true,
 			rights: auth.write_access ? 'rw' : 'r'
-		}, 204);
+		}, 200);
 
 		return new Response(null, {
-			status: 204
+			status: 200
 		});
 	}
 
@@ -204,7 +204,6 @@ export default async (request: Request, env: Deno.Env) => {
 	}
 
 	//	extended kv ops
-
 	//	list all records
 	if (requestUrl.pathname === '/list') {
 
@@ -222,14 +221,15 @@ export default async (request: Request, env: Deno.Env) => {
 			}, 405, { 'Allow': 'GET' });
 		}
 
+		const keyNamePrefix = requestUrl.searchParams.get('prefix');
 
-		const list = Object.entries(localStorage);
+		const keyList = Object.entries(localStorage).map(([key, _value]) => ({
+			record_id: key,
+		}));
 
 		return mkRestResponse({
 			success: true,
-			entries: list.map(([key, _value]) => ({
-				record_id: key,
-			})),
+			entries: keyNamePrefix ? keyList.filter(item => item.record_id.startsWith(keyNamePrefix)) : keyList,
 			list_complete: true
 		}, 200);
 	}
