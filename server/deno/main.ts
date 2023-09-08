@@ -2,7 +2,7 @@ import "https://deno.land/std@0.201.0/dotenv/load.ts";
 import dbhandler from './dbhandler.ts';
 
 const config = {
-	port: 8080
+	port: 16770
 };
 
 const portEnvVarSet = Deno.env.get('PORT');
