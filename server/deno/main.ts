@@ -1,5 +1,7 @@
 import "https://deno.land/std@0.201.0/dotenv/load.ts";
-import dbhandler from './dbhandler.ts';
+
+import type { StorageInterface } from '../shared/storage.ts';
+import redisflareServer from '../shared/server.ts';
 
 const config = {
 	port: 16770
@@ -7,7 +9,7 @@ const config = {
 
 const portEnvVarSet = Deno.env.get('PORT');
 if (portEnvVarSet) {
-	let portNumber = parseInt(portEnvVarSet);
+	const portNumber = parseInt(portEnvVarSet);
 	if (!isNaN(portNumber)) config.port = portNumber;
 }
 
@@ -26,7 +28,30 @@ async function httpHandler(conn: Deno.Conn) {
 
 		try {
 
-			const response = await dbhandler(requestEvent.request, Deno.env);
+			const denoKVStore: StorageInterface = {
+				read(recordID) {
+					return new Promise(resolve => resolve(localStorage.getItem(recordID)));
+				},
+				write(recordID, data) {
+					return new Promise(resolve => resolve(localStorage.setItem(recordID, data)));
+				},
+				delete(recordID) {
+					return new Promise(resolve => resolve(localStorage.removeItem(recordID)));
+				},
+				list(options) {
+					return new Promise(resolve => {
+						const keyList = Object.entries(localStorage).map(([key, _value]) => ({
+							name: key,
+						}));
+						resolve({
+							keys: options?.prefix ? keyList.filter(item => item.name.startsWith(options.prefix as string)) : keyList,
+							list_complete: true
+						});
+					});
+				}
+			};
+
+			const response = await redisflareServer(requestEvent.request, Deno.env.toObject(), denoKVStore);
 			requestEvent.respondWith(response);
 			console.log(`${requestEvent.request.method} ${requestEvent.request.url} : ${response.status}`);
 
