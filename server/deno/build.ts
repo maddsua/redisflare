@@ -11,7 +11,7 @@ const build = await esbuild.build({
 	},
 	bundle: true,
 	format: 'esm',
-	outfile: './bundle.js',
+	outfile: './server.deno.js',
 });
 
 console.log(build);
