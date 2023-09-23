@@ -1,5 +1,4 @@
-//	this task is needed to adapt typescript-like imports to the proper ESM format.
-//	ok, it just adds .ts extension and bundles everything into a single file
+//	bundles everything into a single js file so Deno won't complain about missing .ts extensions
 
 import * as esbuild from "https://deno.land/x/esbuild@v0.19.3/mod.js";
 
