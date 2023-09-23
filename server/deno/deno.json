@@ -1,6 +1,6 @@
 {
 	"tasks": {
 		"build": "deno run --allow-all build.ts",
-		"start": "deno run --allow-all bundle.js"
+		"start": "deno run --allow-all server.deno.js"
 	}
 }
