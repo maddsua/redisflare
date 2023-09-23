@@ -11,5 +11,4 @@ wrangler.toml
 
 # temp junk
 temp/
-server/.deno-build
-server/deno/bundle.js
+server/deno/server.deno.js
