@@ -1,69 +1,63 @@
 import type { APIResponse, BaseErrorResponse, ReadResponse, ListResponse } from '../../types/restapi.ts';
 import type { ListedRecord } from '../../types/kvExtended.ts';
 
-interface ClientAuthData {
-	host: string;
+interface ClientCredentials {
+	remote: string;
 	token: string;
-}
-
-export const validateCredentials = (creds?: Partial<ClientAuthData> | null): Error | null => {
-
-	if (!creds) return new Error('[Client auth failed] Client unauthorized');
-
-	if (!creds.host) return new Error('[Client auth failed] Host address missing');
-	if (!/^http?s:\/\/(([a-z0-9\-\_]+\.)+[a-z]+)|(localhost)(:\d+)?\/?$/i.test(creds.host))
-		return new Error('[Client auth failed] Hosd address format invalid');
-
-	if (!creds.token) return new Error('[Client auth failed] Access token missing');
-	if (!/^rdfl_/i.test(creds.token))
-		return new Error('[Client auth failed] Access token format invalid');
-
-	return null;
 }
 
 export class Redisflare {
 
-	_authdata: ClientAuthData | null = null;
-	_rights: string | null = null;
+	authdata: {
+		remote: URL;
+		token: string;
+	};
+	rights: string | undefined;
 
-	constructor(authData?: ClientAuthData) {
-		if (!authData) return;
-		this._authdata = authData;
+	constructor(creds: ClientCredentials) {
+
+		if (!creds) throw new Error('Client credentials not provided');
+		else if (!creds.remote) throw new Error('Remote URL missing');
+		else if (!creds.token) throw new Error('Access token missing');
+
+		const remoteURL = new URL(creds.remote);
+		remoteURL.pathname = '/';
+		remoteURL.search = '';
+
+		this.authdata = {
+			remote: remoteURL,
+			token: creds.token
+		};
 	}
 
-	async authenticate(authData: ClientAuthData): Promise<true | Error> {
+	async authenticate() {
 
-		if (!authData.host.startsWith('http'))
-			return new Error('Host should use http schema');
+		const requestUrl = new URL(this.authdata.remote.href);
+		requestUrl.pathname = '/auth';
+		requestUrl.searchParams.set('token', this.authdata.token);
+		requestUrl.searchParams.set('report', 'json');
 
-		const remote = new URL(authData.host);
-		remote.pathname = '/auth';
-		remote.searchParams.set('token', authData.token);
-		remote.searchParams.set('report', 'json');
-
-		const response = await fetch(remote).then(data => data.json()) as APIResponse;
+		const response = await fetch(requestUrl).then(data => data.json()) as APIResponse;
 
 		const authorized = 'rights' in response && response.success;
-		if (authorized) {
-			this._authdata = authData;
-			this._rights = response.rights;
-			return true;
-		}
+		if (!authorized) throw new Error(`Auth error: ${(response as BaseErrorResponse).error_text || 'unknown error'}`);
 
-		return new Error(`Auth error: ${(response as BaseErrorResponse).error_text || 'unknown error'}`)
+		this.rights = response.rights;
+
+		return {
+			host: this.authdata.remote.host,
+			rights: this.rights
+		};
 	}
 
 	async get(record_id: string): Promise<string | null> {
 
-		const credsError = validateCredentials(this._authdata);
-		if (credsError) throw credsError;
-
-		const requestUrl = new URL(this._authdata!.host);
+		const requestUrl = new URL(this.authdata.remote.href);
 		requestUrl.searchParams.set('record_id', record_id);
 
 		const reponse = await fetch(requestUrl, {
 			headers: {
-				'Authorization': `Bearer ${this._authdata!.token}`
+				'Authorization': `Bearer ${this.authdata!.token}`
 			}
 		}).then(data => data.json()) as ReadResponse;
 
@@ -73,16 +67,13 @@ export class Redisflare {
 
 	async set(record_id: string, data: string): Promise<void> {
 
-		const credsError = validateCredentials(this._authdata);
-		if (credsError) throw credsError;
-
-		const requestUrl = new URL(this._authdata!.host);
+		const requestUrl = new URL(this.authdata.remote.href);
 		requestUrl.searchParams.set('record_id', record_id);
 
 		const reponse = await fetch(requestUrl, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${this._authdata!.token}`,
+				'Authorization': `Bearer ${this.authdata!.token}`,
 				'content-type': 'text/plain'
 			},
 			body: data
@@ -93,16 +84,13 @@ export class Redisflare {
 
 	async del(record_id: string): Promise<void> {
 
-		const credsError = validateCredentials(this._authdata);
-		if (credsError) throw credsError;
-
-		const requestUrl = new URL(this._authdata!.host);
+		const requestUrl = new URL(this.authdata.remote.href);
 		requestUrl.searchParams.set('record_id', record_id);
 
 		const reponse = await fetch(requestUrl, {
 			method: 'DELETE',
 			headers: {
-				'Authorization': `Bearer ${this._authdata!.token}`
+				'Authorization': `Bearer ${this.authdata!.token}`
 			}
 		}).then(data => data.json()) as ListResponse;
 
@@ -111,16 +99,13 @@ export class Redisflare {
 
 	async list(props?: { prefix?: string; page?: string }): Promise<ListedRecord> {
 
-		const credsError = validateCredentials(this._authdata);
-		if (credsError) throw credsError;
-
-		const requestUrl = new URL(this._authdata!.host);
+		const requestUrl = new URL(this.authdata.remote.href);
 		requestUrl.pathname = '/list';
 		Object.entries(props || {}).filter(item => item[0] && item[1]).forEach(item => requestUrl.searchParams.set(item[0], item[1]));
 
 		const reponse = await fetch(requestUrl, {
 			headers: {
-				'Authorization': `Bearer ${this._authdata!.token}`
+				'Authorization': `Bearer ${this.authdata!.token}`
 			}
 		}).then(data => data.json()) as ListResponse;
 
